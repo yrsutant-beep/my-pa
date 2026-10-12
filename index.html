@@ -48,7 +48,7 @@
     .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
     .btn-scenario { background: #f1f5f9; border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
     .btn-scenario:hover { background: #e2e8f0; }
-    .chat-window { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-height: 200px; display: flex; flex-direction: column; gap: 12px; }
+    .chat-window { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-height: 180px; display: flex; flex-direction: column; gap: 12px; }
     .msg { padding: 10px 14px; border-radius: 12px; font-size: 14px; max-width: 85%; }
     .msg-user { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
     .msg-ai { background: white; color: var(--text); align-self: flex-start; border: 1px solid var(--border); border-bottom-left-radius: 2px; }
@@ -57,6 +57,16 @@
     .btn-action { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; }
     .btn-confirm { background: var(--danger); color: white; }
     .btn-cancel { background: #e2e8f0; color: var(--text); }
+
+    /* Data Places Section */
+    .table-container { background: var(--card); padding: 24px; border-radius: 16px; border: 1px solid var(--border); overflow-x: auto; }
+    .table-container h3 { font-size: 18px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+    th { background: #f1f5f9; padding: 10px; font-weight: 600; color: var(--text); border-bottom: 1px solid var(--border); }
+    td { padding: 10px; border-bottom: 1px solid var(--border); color: var(--muted); }
+    tr:last-child td { border-bottom: none; }
+    a { color: var(--primary); text-decoration: none; font-weight: 600; }
+    a:hover { text-decoration: underline; }
 
     /* Footer & CTA */
     footer { background: var(--card); padding: 32px 24px; border-radius: 16px; border: 1px solid var(--border); text-align: center; }
@@ -128,6 +138,17 @@
       </div>
     </section>
 
+    <!-- DATA PLACES SECTION -->
+    <section class="table-container">
+      <h3>Daftar Lokasi & Tempat</h3>
+      <table id="places">
+        <thead>
+          <tr><th>Nama</th><th>Kategori</th><th>Rating</th><th>Review</th><th>Kota</th><th>Telepon</th><th>Maps</th></tr>
+        </thead>
+        <tbody><tr><td colspan="7">Memuat data...</td></tr></tbody>
+      </table>
+    </section>
+
     <!-- 5. FOOTER & CTA -->
     <footer>
       <a href="mailto:yrsutant@gmail.com" class="cta-btn">Hubungi Pengembang (yrsutant@gmail.com)</a>
@@ -136,6 +157,7 @@
   </div>
 
   <script>
+    /* Simulation Script */
     function runScenario(type) {
       const chat = document.getElementById('chatWindow');
       chat.innerHTML = '';
@@ -205,6 +227,48 @@
       chat.innerHTML += `<div class="msg msg-ai">Baik, penghapusan dibatalkan. Email iklan tetap tersimpan di inbox Anda.</div>`;
       chat.scrollTop = chat.scrollHeight;
     }
+
+    /* Supabase Load Places Script */
+    const SUPABASE_URL = 'https://tzmebyzmsxcrpcqarhws.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_aTc-PGAEXHsn_PTefqAtSA_tXFmj1DC';
+
+    async function loadPlaces() {
+      const tbody = document.querySelector('#places tbody');
+      try {
+        const res = await fetch(
+          SUPABASE_URL + '/rest/v1/places?select=*&order=reviews_count.desc.nullslast&limit=100',
+          { headers: { apikey: SUPABASE_KEY } }
+        );
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const rows = await res.json();
+
+        tbody.replaceChildren();
+        for (const p of rows) {
+          const tr = document.createElement('tr');
+          for (const v of [p.title, p.category_name, p.total_score, p.reviews_count, p.city, p.phone]) {
+            const td = document.createElement('td');
+            td.textContent = v ?? '-';
+            tr.appendChild(td);
+          }
+          const td = document.createElement('td');
+          if (p.url && p.url.startsWith('https://')) {
+            const a = document.createElement('a');
+            a.href = p.url;
+            a.target = '_blank';
+            a.rel = 'noopener';
+            a.textContent = 'Buka';
+            td.appendChild(a);
+          }
+          tr.appendChild(td);
+          tbody.appendChild(tr);
+        }
+        if (!rows.length) tbody.innerHTML = '<tr><td colspan="7">Belum ada data.</td></tr>';
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="7">Gagal memuat data.</td></tr>';
+        console.error(e);
+      }
+    }
+    loadPlaces();
   </script>
 </body>
 </html>
